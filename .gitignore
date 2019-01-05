@@ -1,0 +1,12 @@
+# Directories
+/dist/
+
+# Files
+/historian
+/TODO
+.DS_Store
+c.out
+
+# Patterns
+.*.sw[op]
+*.zip
