@@ -25,6 +25,14 @@ variable "aws_region" {
 # Resources
 ##
 
+variable "dns_name" {
+  type = "string"
+}
+
+variable "dns_zone" {
+  type = "string"
+}
+
 variable "fn" {
   type = "string"
 }

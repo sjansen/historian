@@ -10,6 +10,9 @@ deploy:
 	zip -9 historian.zip historian
 	cd terraform/deploy/ && terraform apply
 
+destroy:
+	cd terraform/deploy/ && terraform destroy
+
 refresh:
 	cookiecutter gh:sjansen/cookiecutter-golang --output-dir .. --config-file .cookiecutter.yaml --no-input --overwrite-if-exists
 	git checkout go.mod go.sum

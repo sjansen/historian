@@ -13,10 +13,30 @@ resource "aws_alb" "lb" {
   }
 }
 
-resource "aws_alb_listener" "lb" {
+resource "aws_alb_listener" "http" {
   load_balancer_arn = "${aws_alb.lb.arn}"
-  port              = "80"
-  protocol          = "HTTP"
+
+  port     = "80"
+  protocol = "HTTP"
+
+  default_action {
+    type = "redirect"
+    redirect {
+      host        = "${var.dns_name}"
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_302"
+    }
+  }
+}
+
+resource "aws_alb_listener" "https" {
+  certificate_arn   = "${aws_acm_certificate.cert.arn}"
+  load_balancer_arn = "${aws_alb.lb.arn}"
+
+  port       = "443"
+  protocol   = "HTTPS"
+  ssl_policy = "ELBSecurityPolicy-FS-2018-06"
 
   default_action {
     target_group_arn = "${aws_alb_target_group.historian.arn}"
@@ -27,17 +47,6 @@ resource "aws_alb_listener" "lb" {
 resource "aws_alb_target_group" "historian" {
   name        = "historian"
   target_type = "lambda"
-
-  health_check {    
-    healthy_threshold   = 2
-    unhealthy_threshold = 5    
-    timeout             = 5    
-    interval            = 120    
-    matcher             = "200"
-    path                = "/health/"    
-    port                = "traffic-port"
-    protocol            = "HTTP"
-  }
 }
 
 resource "aws_alb_target_group_attachment" "fn" {

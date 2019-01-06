@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
+	"net/url"
 	"text/template"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -12,8 +14,25 @@ import (
 func handler(req events.ALBTargetGroupRequest) (resp events.ALBTargetGroupResponse, err error) {
 	fmt.Printf("x-amzn-trace-id=%q.\n", req.Headers["x-amzn-trace-id"])
 
+	data := map[string]interface{}{
+		"HTTPMethod": req.HTTPMethod,
+		"Path":       req.Path,
+		"Headers":    req.Headers,
+		"Body":       req.Body,
+		"ParsedBody": "",
+	}
+	if encoding, ok := req.Headers["content-type"]; ok && req.IsBase64Encoded {
+		if encoding == "application/x-www-form-urlencoded" {
+			if body, err := base64.StdEncoding.DecodeString(req.Body); err == nil {
+				data["ParsedBody"], _ = url.ParseQuery(string(body))
+			} else {
+				data["ParsedBody"] = err.Error()
+			}
+		}
+	}
+
 	var body bytes.Buffer
-	if err = tmpl.Execute(&body, &req); err != nil {
+	if err = tmpl.Execute(&body, data); err != nil {
 		return
 	}
 
@@ -65,7 +84,16 @@ var tmpl = template.Must(template.New("response").Parse(`<!doctype html>
   </table>
 
   <h1>Body</h1>
-  <pre>{{ .Body }}</pre>
+  <table>
+    <tr>
+      <th>Raw</th>
+      <td><code>{{ .Body }}</code></td>
+    </tr>
+    <tr>
+      <th>Parsed</th>
+      <td><code>{{ .ParsedBody }}</code></td>
+    </tr>
+  </table>
 
 </body>
 </html>
