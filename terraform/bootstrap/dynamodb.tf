@@ -6,7 +6,7 @@ resource "aws_dynamodb_table" "db" {
 
   attribute {
     name = "event-id"
-    type = "B"
+    type = "S"
   }
 
   attribute {

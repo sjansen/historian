@@ -9,6 +9,12 @@ resource "aws_lambda_function" "fn" {
   runtime     = "go1.x"
   memory_size = 128
   timeout     = 15
+
+  environment {
+    variables = {
+      HISTORIAN_TABLE = "${var.db}"
+    }
+  }
 }
 
 resource "aws_lambda_permission" "lb" {
