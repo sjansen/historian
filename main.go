@@ -35,8 +35,8 @@ func handler(req events.ALBTargetGroupRequest) (resp events.ALBTargetGroupRespon
 		"Body":       req.Body,
 		"ParsedBody": "",
 	}
-	if encoding, ok := req.Headers["content-type"]; ok && req.IsBase64Encoded {
-		if encoding == "application/x-www-form-urlencoded" {
+	if encoding, ok := req.Headers["content-type"]; ok {
+		if encoding == "application/x-www-form-urlencoded" && req.IsBase64Encoded {
 			if body, err := base64.StdEncoding.DecodeString(req.Body); err == nil {
 				values, _ := url.ParseQuery(string(body))
 				data["ParsedBody"] = values
@@ -44,6 +44,8 @@ func handler(req events.ALBTargetGroupRequest) (resp events.ALBTargetGroupRespon
 			} else {
 				data["ParsedBody"] = err.Error()
 			}
+		} else if encoding == "application/json" {
+			msg = req.Body
 		}
 	}
 
@@ -112,7 +114,7 @@ var tmpl = template.Must(template.New("response").Parse(`<!doctype html>
     </tr>
   </table>
 
-  <form method="post">
+  <form method="post" id="msg-form">
     <div>
       <label for="msg">Message?</label>
       <input name="msg" id="msg" value="Spoon!">
@@ -120,6 +122,25 @@ var tmpl = template.Must(template.New("response").Parse(`<!doctype html>
     <button>Send</button>
   </form>
 
+<script>
+if (self.fetch) {
+  var form = document.getElementById('msg-form');
+  form.onsubmit = function(){
+    var data = new FormData(form);
+    var msg = data.get("msg");
+    fetch("/messages", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({msg: msg}),
+    }).then(function(res){
+      console.log(res);
+    });
+    return false;
+  };
+}
+</script>
 </body>
 </html>
 `))
