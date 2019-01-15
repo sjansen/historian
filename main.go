@@ -47,21 +47,23 @@ func handler(req events.ALBTargetGroupRequest) (resp events.ALBTargetGroupRespon
 		}
 	}
 
-	now := time.Now().UTC()
-	id := ulid.MustNew(ulid.Timestamp(now), entropy)
-	timestamp := "0"
-	expires := strconv.FormatInt(now.Add(twoWeeks).Unix(), 10)
-	input := &dynamodb.PutItemInput{
-		TableName: table,
-		Item: map[string]*dynamodb.AttributeValue{
-			"event-id":  {S: aws.String(id.String())},
-			"timestamp": {N: aws.String(timestamp)},
-			"expires":   {N: aws.String(expires)},
-			"msg":       {S: aws.String(msg)},
-		},
-	}
-	if _, err = svc.PutItem(input); err != nil {
-		fmt.Printf("putitem=%q", err.Error())
+	if msg != "" {
+		now := time.Now().UTC()
+		id := ulid.MustNew(ulid.Timestamp(now), entropy)
+		timestamp := "0"
+		expires := strconv.FormatInt(now.Add(twoWeeks).Unix(), 10)
+		input := &dynamodb.PutItemInput{
+			TableName: table,
+			Item: map[string]*dynamodb.AttributeValue{
+				"event-id":  {S: aws.String(id.String())},
+				"timestamp": {N: aws.String(timestamp)},
+				"expires":   {N: aws.String(expires)},
+				"msg":       {S: aws.String(msg)},
+			},
+		}
+		if _, err = svc.PutItem(input); err != nil {
+			fmt.Printf("putitem=%q", err.Error())
+		}
 	}
 
 	var body bytes.Buffer
