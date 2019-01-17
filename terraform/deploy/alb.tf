@@ -1,4 +1,6 @@
 resource "aws_alb" "lb" {
+  count = "${var.use_alb ? 1 : 0}"
+
   name               = "${var.lb}"
   internal           = false
   load_balancer_type = "application"
@@ -14,11 +16,12 @@ resource "aws_alb" "lb" {
 }
 
 resource "aws_alb_listener" "http" {
-  load_balancer_arn = "${aws_alb.lb.arn}"
+  count = "${var.use_alb ? 1 : 0}"
+
+  load_balancer_arn = "${join("", aws_alb.lb.*.arn)}"
 
   port     = "80"
   protocol = "HTTP"
-
   default_action {
     type = "redirect"
     redirect {
@@ -31,26 +34,31 @@ resource "aws_alb_listener" "http" {
 }
 
 resource "aws_alb_listener" "https" {
+  count = "${var.use_alb ? 1 : 0}"
+
   certificate_arn   = "${aws_acm_certificate.cert.arn}"
-  load_balancer_arn = "${aws_alb.lb.arn}"
+  load_balancer_arn = "${join("", aws_alb.lb.*.arn)}"
 
   port       = "443"
   protocol   = "HTTPS"
   ssl_policy = "ELBSecurityPolicy-FS-2018-06"
-
   default_action {
-    target_group_arn = "${aws_alb_target_group.historian.arn}"
+    target_group_arn = "${join("", aws_alb_target_group.historian.*.arn)}"
     type             = "forward"
   }
 }
 
 resource "aws_alb_target_group" "historian" {
+  count = "${var.use_alb ? 1 : 0}"
+
   name        = "historian"
   target_type = "lambda"
 }
 
 resource "aws_alb_target_group_attachment" "fn" {
-  target_group_arn  = "${aws_alb_target_group.historian.arn}"
+  count = "${var.use_alb ? 1 : 0}"
+
+  target_group_arn = "${join("", aws_alb_target_group.historian.*.arn)}"
   target_id         = "${aws_lambda_function.fn.arn}"
   depends_on        = ["aws_lambda_permission.lb"]
 }

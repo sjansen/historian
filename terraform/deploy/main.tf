@@ -65,6 +65,10 @@ variable "subnet_ids" {
   type = "list"
 }
 
+variable "use_alb" {
+  default = true
+}
+
 variable "vpc_id" {
   type = "string"
 }

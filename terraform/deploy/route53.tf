@@ -15,13 +15,15 @@ resource "aws_route53_record" "cert" {
 }
 
 
-resource "aws_route53_record" "host" {
+resource "aws_route53_record" "alb" {
+  count = "${var.use_alb ? 1 : 0}"
+
   zone_id  = "${data.aws_route53_zone.zone.id}"
   name     = "${var.dns_name}"
   type     = "A"
   alias {
-    name     = "${aws_alb.lb.dns_name}"
-    zone_id  = "${aws_alb.lb.zone_id}"
+    name     = "${join("", aws_alb.lb.*.dns_name)}"
+    zone_id  = "${join("", aws_alb.lb.*.zone_id)}"
     evaluate_target_health = false
   }
 }
