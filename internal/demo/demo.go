@@ -23,7 +23,63 @@ var svc = dynamodb.New(session.Must(session.NewSession()))
 var table = aws.String(os.Getenv("HISTORIAN_TABLE"))
 var twoWeeks = time.Hour * 24 * 14
 
-func Handler(req events.ALBTargetGroupRequest) (resp events.ALBTargetGroupResponse, err error) {
+func ALBHandler(req events.ALBTargetGroupRequest) (resp events.ALBTargetGroupResponse, err error) {
+	fmt.Printf("x-amzn-trace-id=%q.\n", req.Headers["x-amzn-trace-id"])
+
+	msg := ""
+	data := map[string]interface{}{
+		"HTTPMethod": req.HTTPMethod,
+		"Path":       req.Path,
+		"Headers":    req.Headers,
+		"Body":       req.Body,
+		"ParsedBody": "",
+	}
+	if encoding, ok := req.Headers["content-type"]; ok {
+		if encoding == "application/x-www-form-urlencoded" && req.IsBase64Encoded {
+			if body, err := base64.StdEncoding.DecodeString(req.Body); err == nil {
+				values, _ := url.ParseQuery(string(body))
+				data["ParsedBody"] = values
+				msg = values.Get("msg")
+			} else {
+				data["ParsedBody"] = err.Error()
+			}
+		} else if encoding == "application/json" {
+			msg = req.Body
+		}
+	}
+
+	if msg != "" {
+		now := time.Now().UTC()
+		id := ulid.MustNew(ulid.Timestamp(now), entropy)
+		timestamp := "0"
+		expires := strconv.FormatInt(now.Add(twoWeeks).Unix(), 10)
+		input := &dynamodb.PutItemInput{
+			TableName: table,
+			Item: map[string]*dynamodb.AttributeValue{
+				"event-id":  {S: aws.String(id.String())},
+				"timestamp": {N: aws.String(timestamp)},
+				"expires":   {N: aws.String(expires)},
+				"msg":       {S: aws.String(msg)},
+			},
+		}
+		if _, err = svc.PutItem(input); err != nil {
+			fmt.Printf("putitem=%q", err.Error())
+		}
+	}
+
+	var body bytes.Buffer
+	if err = tmpl.Execute(&body, data); err != nil {
+		return
+	}
+
+	resp.StatusCode = 200
+	resp.Headers = map[string]string{"Content-Type": "text/html; charset=utf-8"}
+	resp.Body = body.String()
+
+	return
+}
+
+func APIGHandler(req events.APIGatewayProxyRequest) (resp events.APIGatewayProxyResponse, err error) {
 	fmt.Printf("x-amzn-trace-id=%q.\n", req.Headers["x-amzn-trace-id"])
 
 	msg := ""
