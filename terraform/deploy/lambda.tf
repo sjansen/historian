@@ -20,9 +20,19 @@ resource "aws_lambda_function" "fn" {
 resource "aws_lambda_permission" "lb" {
   count = "${var.use_alb ? 1 : 0}"
 
-  statement_id  = "AllowExecutionFromLB"
+  statement_id  = "AllowExecutionFromALB"
   action        = "lambda:InvokeFunction"
   function_name = "${aws_lambda_function.fn.arn}"
   principal     = "elasticloadbalancing.amazonaws.com"
   source_arn    = "${join("", aws_alb_target_group.historian.*.arn)}"
+}
+
+resource "aws_lambda_permission" "apigw" {
+  count = "${var.use_alb ? 0 : 1}"
+
+  statement_id  = "AllowExecutionFromAPIGW"
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.fn.arn}"
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${join("", aws_api_gateway_deployment.default.*.execution_arn)}*/*/*"
 }

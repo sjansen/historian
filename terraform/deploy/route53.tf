@@ -27,3 +27,16 @@ resource "aws_route53_record" "alb" {
     evaluate_target_health = false
   }
 }
+
+resource "aws_route53_record" "apigw" {
+  count = "${var.use_alb ? 0 : 1}"
+
+  zone_id  = "${data.aws_route53_zone.zone.id}"
+  name    = "${join("", aws_api_gateway_domain_name.gw.*.domain_name)}"
+  type    = "A"
+  alias {
+    name     = "${join("", aws_api_gateway_domain_name.gw.*.regional_domain_name)}"
+    zone_id  = "${join("", aws_api_gateway_domain_name.gw.*.regional_zone_id)}"
+    evaluate_target_health = false
+  }
+}

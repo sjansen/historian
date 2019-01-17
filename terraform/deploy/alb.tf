@@ -4,7 +4,7 @@ resource "aws_alb" "lb" {
   name               = "${var.lb}"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = ["${aws_security_group.sg.id}"]
+  security_groups    = ["${join("", aws_security_group.sg.*.id)}"]
   subnets            = "${var.subnet_ids}"
 
   enable_deletion_protection = "${var.protect_lb}"
@@ -36,7 +36,7 @@ resource "aws_alb_listener" "http" {
 resource "aws_alb_listener" "https" {
   count = "${var.use_alb ? 1 : 0}"
 
-  certificate_arn   = "${aws_acm_certificate.cert.arn}"
+  certificate_arn   = "${aws_acm_certificate_validation.cert.certificate_arn}"
   load_balancer_arn = "${join("", aws_alb.lb.*.arn)}"
 
   port       = "443"

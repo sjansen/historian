@@ -1,4 +1,6 @@
 resource "aws_security_group" "sg" {
+  count = "${var.use_alb ? 1 : 0}"
+
   name        = "${var.sg}"
   description = "Used by historian"
   vpc_id      = "${var.vpc_id}"
