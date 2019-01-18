@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aws/aws-lambda-go/lambda"
-
 	"github.com/sjansen/historian/internal/alb"
 	"github.com/sjansen/historian/internal/api"
-	"github.com/sjansen/historian/internal/demo"
+	"github.com/sjansen/historian/internal/apigw"
 )
 
 func main() {
@@ -17,6 +15,8 @@ func main() {
 			fmt.Printf("error=%q\n", err.Error())
 		}
 	} else {
-		lambda.Start(demo.APIGHandler)
+		if err := apigw.ListenAndServe("", &api.Handler{}); err != nil {
+			fmt.Printf("error=%q\n", err.Error())
+		}
 	}
 }
