@@ -21,12 +21,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleGET(w http.ResponseWriter, r *http.Request) {
+	h.showRequestMetadata(r)
+	headers := w.Header()
+	headers.Add("Content-Type", "text/html; charset=utf-8")
 	data := map[string]interface{}{
 		"URL": r.URL.String(),
 	}
-
-	headers := w.Header()
-	headers.Add("Content-Type", "text/html; charset=utf-8")
 	if err := tmpl.Execute(w, data); err != nil {
 		fmt.Printf("error=%q\n", err.Error())
 		w.WriteHeader(500)
@@ -34,14 +34,24 @@ func (h *Handler) handleGET(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handlePOST(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
+	h.showRequestMetadata(r)
+	_, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Printf("error=%q\n", err.Error())
 		w.WriteHeader(500)
 		return
 	}
-	fmt.Println(string(body))
 	w.WriteHeader(200)
+}
+
+func (h *Handler) showRequestMetadata(r *http.Request) {
+	fmt.Printf("method=%q url=%q\n", r.Method, r.URL.String())
+	headers := r.Header
+	for k, vals := range headers {
+		for _, v := range vals {
+			fmt.Printf("%s=%q\n", k, v)
+		}
+	}
 }
 
 var tmpl = template.Must(template.New("response").Parse(`<!doctype html>
