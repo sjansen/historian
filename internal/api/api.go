@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"text/template"
 )
@@ -9,12 +10,20 @@ import (
 type Handler struct{}
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	data := map[string]interface{}{
-		"HTTPMethod": r.Method,
-		"Path":       r.URL.RawPath,
-		"Headers":    r.Header,
+	switch r.Method {
+	case "GET":
+		h.handleGET(w, r)
+	case "POST":
+		h.handlePOST(w, r)
+	default:
+		w.WriteHeader(400)
 	}
-	fmt.Printf("url=%#v\n", r.URL)
+}
+
+func (h *Handler) handleGET(w http.ResponseWriter, r *http.Request) {
+	data := map[string]interface{}{
+		"URL": r.URL.String(),
+	}
 
 	headers := w.Header()
 	headers.Add("Content-Type", "text/html; charset=utf-8")
@@ -24,6 +33,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handler) handlePOST(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("error=%q\n", err.Error())
+		w.WriteHeader(500)
+		return
+	}
+	fmt.Println(string(body))
+	w.WriteHeader(200)
+}
+
 var tmpl = template.Must(template.New("response").Parse(`<!doctype html>
 <html lang="en">
 <head>
@@ -31,18 +51,46 @@ var tmpl = template.Must(template.New("response").Parse(`<!doctype html>
   <title>historian</title>
 </head>
 <body>
+  <h1>{{ .URL }}</h1>
 
-  <h1>{{ .HTTPMethod }} {{ .Path }}</h1>
+  <form id="form" action="" method="post" style="padding:25px;">
+<textarea id="data" name="data" style="width:300px;height:100px;border:1px solid;">{"foo": "bar"}</textarea>
+    <div style="margin-top:10px;width:300px;text-align:center;">
+      <input type="submit" id="submit">
+    </div>
+  </form>
 
-  <h2>Headers</h2>
-  <table>
-    {{range $key, $vals := .Headers}}{{range $idx, $val := $vals}}<tr>
-      <th><code>{{ $key }}</code></th>
-      <td><code>{{ $val }}</code></td>
-    </tr>
-    {{end}}{{end}}
-  </table>
-
+<script>
+(function(window){
+  var data = window.document.getElementById("data");
+  var submit = window.document.getElementById("submit");
+  data.oninput = function(){
+    try {
+      JSON.parse(data.value);
+      submit.disabled = false;
+    } catch {
+      submit.disabled = true;
+    }
+  }
+  if (self.fetch) {
+    var form = document.getElementById('form');
+    form.onsubmit = function(){
+      var data = new FormData(form);
+      var msg = data.get("data");
+      fetch("/messages", {
+        method: "POST",
+        headers: {
+  	  'Content-Type': 'application/json'
+        },
+        body: msg,
+      }).then(function(res){
+        console.log(res);
+      });
+      return false;
+    };
+  }
+})(window);
+</script>
 </body>
 </html>
 `))
