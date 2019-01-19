@@ -39,6 +39,10 @@ func (w *responseWriter) Header() http.Header {
 func (w *responseWriter) Write(b []byte) (int, error) {
 	if !w.wroteHeader {
 		w.WriteHeader(http.StatusOK)
+		headers := w.Header()
+		if _, ok := headers["Content-Type"]; !ok {
+			headers.Add("Content-Type", "application/octet-stream")
+		}
 	}
 	return w.buffer.Write(b)
 }
