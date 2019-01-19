@@ -14,6 +14,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		"Path":       r.URL.RawPath,
 		"Headers":    r.Header,
 	}
+	fmt.Printf("url=%#v\n", r.URL)
 
 	headers := w.Header()
 	headers.Add("Content-Type", "text/html; charset=utf-8")

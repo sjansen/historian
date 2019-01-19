@@ -41,6 +41,18 @@ func newRequest(e events.ALBTargetGroupRequest) (*http.Request, error) {
 	q := url.Values(e.MultiValueQueryStringParameters)
 	u.RawQuery = q.Encode()
 
+	u.Host = e.Headers["Host"]
+	u.Scheme = e.Headers["X-Forwarded-Proto"]
+	if u.Host != "" && u.Scheme != "" {
+		port, ok := e.Headers["X-Forwarded-Port"]
+		switch {
+		case ok && u.Scheme == "http" && port != "80":
+			u.Host += ":" + port
+		case ok && u.Scheme == "https" && port != "443":
+			u.Host += ":" + port
+		}
+	}
+
 	var r io.Reader
 	if e.IsBase64Encoded {
 		b, err := base64.StdEncoding.DecodeString(e.Body)
