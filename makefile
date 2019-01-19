@@ -8,7 +8,7 @@ bootstrap:
 deploy:
 	GOOS=linux GOARCH=amd64 go build -o historian main.go
 	zip -9 historian.zip historian
-	cd terraform/deploy/ && terraform apply
+	cd terraform/deploy/ && terraform apply -auto-approve
 
 destroy:
 	cd terraform/deploy/ && terraform destroy
