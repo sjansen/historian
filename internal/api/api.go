@@ -4,10 +4,26 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"text/template"
+	"time"
+
+	"github.com/sjansen/historian/internal/dto"
+	"github.com/sjansen/historian/internal/message"
 )
 
-type Handler struct{}
+type MessageRepo interface {
+	Add(msg *dto.Message) (id string, err error)
+}
+
+type MessageVerifier interface {
+	VerifySignature(message, signature string) (valid bool, err error)
+}
+
+type Handler struct {
+	Repo     MessageRepo
+	Verifier MessageVerifier
+}
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -35,12 +51,48 @@ func (h *Handler) handleGET(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handlePOST(w http.ResponseWriter, r *http.Request) {
 	h.showRequestMetadata(r)
-	_, err := ioutil.ReadAll(r.Body)
+	contentType := r.Header.Get("Content-Type")
+	if contentType != "application/json" {
+		w.WriteHeader(400)
+		return
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Printf("error=%q\n", err.Error())
 		w.WriteHeader(500)
 		return
 	}
+
+	data := string(body)
+	signature := r.Header.Get("Clubhouse-Signature")
+	valid, err := h.Verifier.VerifySignature(data, signature)
+	switch {
+	case err != nil:
+		fmt.Printf("error=%q\n", err.Error())
+		w.WriteHeader(500)
+		return
+	case !valid:
+		w.WriteHeader(403)
+		return
+	}
+
+	msg, err := message.Parse(strings.NewReader(data))
+	if err != nil {
+		fmt.Printf("error=%q\n", err.Error())
+		w.WriteHeader(500)
+	}
+
+	id, err := h.Repo.Add(&dto.Message{
+		Timestamp: time.Time(msg.ChangedAt),
+		RawData:   data,
+	})
+	if err != nil {
+		fmt.Printf("error=%q\n", err.Error())
+		w.WriteHeader(500)
+	}
+	fmt.Printf("added=%q\n", id)
+
 	w.WriteHeader(200)
 }
 

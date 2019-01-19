@@ -11,6 +11,7 @@ resource "aws_lambda_function" "fn" {
 
   environment {
     variables = {
+      HISTORIAN_SECRET  = "${var.secret}"
       HISTORIAN_TABLE   = "${var.db}"
       HISTORIAN_USE_ALB = "${var.use_alb ? "true" : "false"}"
     }

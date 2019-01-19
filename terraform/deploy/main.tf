@@ -65,6 +65,10 @@ variable "subnet_ids" {
   type = "list"
 }
 
+variable "secret" {
+  type = "string"
+}
+
 variable "use_alb" {
   default = true
 }
