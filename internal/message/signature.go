@@ -6,10 +6,12 @@ import (
 	"encoding/hex"
 )
 
-var mac = hmac.New(sha256.New, []byte("Spoon!"))
+type Verifier struct {
+	Key string
+}
 
-func VerifySignature(message, signature string) (bool, error) {
-	mac.Reset()
+func (v *Verifier) VerifySignature(message, signature string) (bool, error) {
+	mac := hmac.New(sha256.New, []byte(v.Key))
 	mac.Write([]byte(message))
 	expectedMAC := mac.Sum(nil)
 	messageMAC, err := hex.DecodeString(signature)

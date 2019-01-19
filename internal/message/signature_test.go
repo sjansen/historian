@@ -11,6 +11,7 @@ import (
 )
 
 func TestVerify(t *testing.T) {
+	verifier := &Verifier{Key: "Spoon!"}
 	for _, tc := range []struct {
 		filename  string
 		signature string
@@ -72,7 +73,7 @@ func TestVerify(t *testing.T) {
 			require.NoError(err)
 
 			message := strings.TrimSpace(string(data))
-			actual, err := VerifySignature(message, tc.signature)
+			actual, err := verifier.VerifySignature(message, tc.signature)
 			require.NoError(err)
 
 			require.Equal(tc.expected, actual)
