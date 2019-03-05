@@ -1,0 +1,13 @@
+version: 1
+cli:
+  server: https://app.fossa.io
+  fetcher: custom
+  project: historian
+analyze:
+  modules:
+  - name: github.com/sjansen/historian
+    type: go
+    target: github.com/sjansen/historian
+    path: .
+    options:
+      all-tags: true
