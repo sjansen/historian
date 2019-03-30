@@ -1,7 +1,7 @@
 module github.com/sjansen/historian
 
 require (
-	github.com/aws/aws-lambda-go v1.9.0
+	github.com/aws/aws-lambda-go v1.10.0
 	github.com/aws/aws-sdk-go v1.17.14
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/oklog/ulid v1.3.1
